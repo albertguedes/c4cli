@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-#  c4cli.sh - A simple chess game interface in bash
+#
+# c4cli.sh - A simple chess game interface in bash
 #
 # created: 2025-04-03
 # author: Albert R. Carnier Guedes <albert@teko.net.br>
@@ -355,7 +356,7 @@ function show_message(){
         message=""
 
         if ! continue_command; then
-            echo "Error: show_message() - unable to show prompt" >&2
+            echo "Error: show_message() - unable to show message" >&2
             return 1
         fi
     fi
