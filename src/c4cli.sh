@@ -28,8 +28,6 @@
 #
 set -e 
 
-VERSION="0.1.0"
-
 #
 # Pieces Styles
 #
@@ -52,14 +50,14 @@ PIECES_UTF8_COORDINATES_Y=("1" "2" "3" "4" "5" "6" "7" "8")
 # Set style
 if [[ "$(tty)" =~ "tty" ]]; then
     # If console tty, uses letters 
-    PIECES=("${PIECES_LETTERS[@]}")
-    PIECES_COORDINATES_X=("${PIECES_LETTERS_COORDINATES_X[@]}")
-    PIECES_COORDINATES_Y=("${PIECES_LETTERS_COORDINATES_Y[@]}")
+    pieces=("${PIECES_LETTERS[@]}")
+    pieces_coordinates_x=("${PIECES_LETTERS_COORDINATES_X[@]}")
+    pieces_coordinates_y=("${PIECES_LETTERS_COORDINATES_Y[@]}")
 else
     # If not console, uses UTF-8
-    PIECES=("${PIECES_UTF8[@]}")
-    PIECES_COORDINATES_X=("${PIECES_UTF8_COORDINATES_X[@]}")
-    PIECES_COORDINATES_Y=("${PIECES_UTF8_COORDINATES_Y[@]}")
+    pieces=("${PIECES_UTF8[@]}")
+    pieces_coordinates_x=("${PIECES_UTF8_COORDINATES_X[@]}")
+    pieces_coordinates_y=("${PIECES_UTF8_COORDINATES_Y[@]}")
 fi
 
 #
@@ -75,22 +73,22 @@ INITIAL_BOARD=(
      6  6  6  6  6  6  6  6
      3  5  4  2  1  4  5  3
 )
-BOARD=("${INITIAL_BOARD[@]}")
+board=("${INITIAL_BOARD[@]}")
 
 #
 # Player State
 #
-PLAYER_IS_WHITE=1
-PLAYER_TURN=1
+player_is_white=1
+player_turn=1
 
 #
 # Message
 #
-MESSAGE=""
+message=""
 
 #
 # This function is the "brain" of the script. It evaluates the move. 
-# It is generic enough to be easily adapted to a chess engine to validate moves 
+# It can be be adapted to a chess engine to validate moves 
 # or to use your custom rules. For now it has basic rules.
 #
 function evaluates_move(){
@@ -121,23 +119,23 @@ function evaluates_move(){
 
     # 1st rule: Check if the moved piece is of the player's turn.
     if [[ $from_piece_id -eq 0 ]]; then
-        MESSAGE="There is no piece to move in that square."
+        message="There is no piece to move in that square."
         return 1
-    elif [[ $PLAYER_TURN -eq 1 ]] && [[ $from_piece_id -gt 6 ]]; then
-        MESSAGE="You cant move black piece."
+    elif [[ $player_turn -eq 1 ]] && [[ $from_piece_id -gt 6 ]]; then
+        message="You cant move black piece."
         return 1
-    elif [[ $PLAYER_TURN -eq 0 ]] && [[ $from_piece_id -lt 7 ]]; then
-        MESSAGE="You cant move white piece."
+    elif [[ $player_turn -eq 0 ]] && [[ $from_piece_id -lt 7 ]]; then
+        message="You cant move white piece."
         return 1
     fi
 
     # 2nd rule: Check if the piece being captured belongs to the opponent
     if [[ $to_piece_id -gt 0 ]]; then
-       if [[ $PLAYER_TURN -eq 1 ]] && [[ $to_piece_id -le 6 ]]; then
-            MESSAGE="You cant take white piece."
+       if [[ $player_turn -eq 1 ]] && [[ $to_piece_id -le 6 ]]; then
+            message="You cant take white piece."
             return 1
-        elif [[ $PLAYER_TURN -eq 0 ]] && [[ $to_piece_id -gt 6 ]]; then
-            MESSAGE="You cant take black piece."
+        elif [[ $player_turn -eq 0 ]] && [[ $to_piece_id -gt 6 ]]; then
+            message="You cant take black piece."
             return 1
         fi
     fi
@@ -145,24 +143,24 @@ function evaluates_move(){
     return 0
 }
 
-function coordenates_to_square(){
+function coordinates_to_square(){
     local ascii_x
     local x y
     local square
 
     if [[ -z "${1:0:1}" ]]; then
-        echo "Error: coordenates_to_square() - 1st parameter is null" >&2
+        echo "Error: coordinates_to_square() - 1st parameter is null" >&2
         return 1
     fi
 
     if [[ -z "${1:1:1}" ]]; then
-        echo "Error: coordenates_to_square() - 2nd parameter is null" >&2
+        echo "Error: coordinates_to_square() - 2nd parameter is null" >&2
         return 1
     fi
 
     ascii_x="$(printf "%d" "'${1:0:1}")"
     if [[ $ascii_x -lt 97 || $ascii_x -gt 104 ]]; then
-        echo "Error: coordenates_to_square() - 1st parameter is out of range" >&2
+        echo "Error: coordinates_to_square() - 1st parameter is out of range" >&2
         return 1
     fi
 
@@ -170,7 +168,7 @@ function coordenates_to_square(){
 
     y=${1:1:1}
     if [[ $y -lt 1 || $y -gt 8 ]]; then
-        echo "Error: coordenates_to_square() - 2nd parameter is out of range" >&2
+        echo "Error: coordinates_to_square() - 2nd parameter is out of range" >&2
         return 1
     fi
 
@@ -187,25 +185,25 @@ function move_piece(){
         return 1
     fi
 
-    local -i from_square=$(coordenates_to_square "${move_string:0:2}")
-    local -i to_square=$(coordenates_to_square "${move_string:2:2}")
+    local -i from_square=$(coordinates_to_square "${move_string:0:2}")
+    local -i to_square=$(coordinates_to_square "${move_string:2:2}")
 
     if [[ $from_square -lt 0 || $to_square -lt 0 ]]; then
         echo "Error: Invalid square coordinates" >&2
         return 1
     fi
 
-    local -i from_piece_id=${BOARD[$from_square]}
-    local -i to_piece_id=${BOARD[$to_square]}
+    local -i from_piece_id=${board[$from_square]}
+    local -i to_piece_id=${board[$to_square]}
 
     if ! evaluates_move $from_square $from_piece_id $to_square $to_piece_id; then
         return 1
     fi
 
-    BOARD[$to_square]=$from_piece_id
-    BOARD[$from_square]=0
+    board[$to_square]=$from_piece_id
+    board[$from_square]=0
 
-    [[ $PLAYER_TURN -eq 1 ]] && PLAYER_TURN=0 || PLAYER_TURN=1
+    [[ $player_turn -eq 1 ]] && player_turn=0 || player_turn=1
 
     return 0
 }
@@ -215,45 +213,45 @@ function show_board(){
     local x y
     local square
 
-    if [[ ${#PIECES_COORDINATES_Y[@]} -ne 8 ]]; then
-        echo "Error: PIECES_COORDINATES_Y has wrong size" >&2
+    if [[ ${#pieces_coordinates_y[@]} -ne 8 ]]; then
+        echo "Error: pieces_coordinates_y has wrong size" >&2
         return 1
     fi
 
-    if [[ ${#PIECES_COORDINATES_X[@]} -ne 8 ]]; then
-        echo "Error: PIECES_COORDINATES_X has wrong size" >&2
+    if [[ ${#pieces_coordinates_x[@]} -ne 8 ]]; then
+        echo "Error: pieces_coordinates_x has wrong size" >&2
         return 1
     fi
 
-    if [[ ${#BOARD[@]} -ne 64 ]]; then
-        echo "Error: BOARD has wrong size" >&2
+    if [[ ${#board[@]} -ne 64 ]]; then
+        echo "Error: board has wrong size" >&2
         return 1
     fi
 
-    if [[ ${#PIECES[@]} -ne 13 ]]; then
-        echo "Error: PIECES has wrong size" >&2
+    if [[ ${#pieces[@]} -ne 13 ]]; then
+        echo "Error: pieces has wrong size" >&2
         return 1
     fi
 
     for (( y = 7; y >= 0; y-- )); do
         # Print row labels on left side of the board
-        if [[ -z "${PIECES_COORDINATES_Y[$y]}" ]]; then
-            echo "Error: PIECES_COORDINATES_Y[$y] is null" >&2
+        if [[ -z "${pieces_coordinates_y[$y]}" ]]; then
+            echo "Error: pieces_coordinates_y[$y] is null" >&2
             return 1
         fi
 
-        printf "%s " "${PIECES_COORDINATES_Y[$y]}"
+        printf "%s " "${pieces_coordinates_y[$y]}"
 
         # Print pieces
         for (( x = 0; x < 8; x++ )); do
             square="$(( (7-$y) * 8 + $x ))" 
-            piece_id="${BOARD[$square]}"
-            if [[ -z "${PIECES[$piece_id]}" ]]; then
-                echo "Error: PIECES[$piece_id] is null" >&2
+            piece_id="${board[$square]}"
+            if [[ -z "${pieces[$piece_id]}" ]]; then
+                echo "Error: pieces[$piece_id] is null" >&2
                 return 1
             fi
 
-            printf "${PIECES[$piece_id]} " 
+            printf "${pieces[$piece_id]} " 
         done    
 
         printf "\n" 
@@ -262,12 +260,12 @@ function show_board(){
     # Print column labels on foot
     printf "  "
     for (( x = 0; x < 8; x++ )); do 
-        if [[ -z "${PIECES_COORDINATES_X[$x]}" ]]; then
-            echo "Error: PIECES_COORDINATES_X[$x] is null" >&2
+        if [[ -z "${pieces_coordinates_x[$x]}" ]]; then
+            echo "Error: pieces_coordinates_x[$x] is null" >&2
             return 1
         fi
 
-        printf "${PIECES_COORDINATES_X[$x]} "
+        printf "${pieces_coordinates_x[$x]} "
     done
 
     printf "\n\n"
@@ -315,7 +313,7 @@ function options(){
         q|quit) exit 0;;
         [a-h][1-8][a-h][1-8]) move_piece "$cmd";;
         h|help) help_command;;
-        *) MESSAGE="Invalid command.";;
+        *) message="Invalid command.";;
     esac
 
     return 0
@@ -325,18 +323,18 @@ function show_prompt() {
     local cmd arg
     local color who
 
-    if [[ -z "$PLAYER_TURN" ]]; then
-        echo "Error: PLAYER_TURN is not set" >&2
+    if [[ -z "$player_turn" ]]; then
+        echo "Error: player_turn is not set" >&2
         return 1
     fi
 
-    if [[ -z "$PLAYER_IS_WHITE" ]]; then
-        echo "Error: PLAYER_IS_WHITE is not set" >&2
+    if [[ -z "$player_is_white" ]]; then
+        echo "Error: player_is_white is not set" >&2
         return 1
     fi
 
-    [[ $PLAYER_TURN -eq 1 ]] && who="you" || who="opp"
-    [[ $PLAYER_IS_WHITE -eq $PLAYER_TURN ]] && color="white" || color="black"
+    [[ $player_turn -eq 1 ]] && who="you" || who="opp"
+    [[ $player_is_white -eq $player_turn ]] && color="white" || color="black"
 
     if ! read -r -p "(${who}) ${color}> " cmd arg; then
         echo "Error: unable to read input" >&2
@@ -352,9 +350,9 @@ function show_prompt() {
 }
 
 function show_message(){
-    if [[ "$MESSAGE" != "" ]]; then
-        printf "\n%s " "$MESSAGE"
-        MESSAGE=""
+    if [[ "$message" != "" ]]; then
+        printf "\n%s " "$message"
+        message=""
 
         if ! continue_command; then
             echo "Error: show_message() - unable to show prompt" >&2
@@ -376,7 +374,9 @@ function main(){
     return 0
 }
 
+# BEGIN.
 main "$@" || {
     printf "An Error Ocurred.\n"
     exit 1
 }
+# THE END.
